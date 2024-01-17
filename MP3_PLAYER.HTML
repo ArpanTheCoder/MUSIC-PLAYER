@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Colorful Music Player</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: linear-gradient(to right, #4dabf8 50%, #07d5f0 50%);
+        font-family: Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column; /* Added to center align song name */
+      }
+
+      #music-container {
+        display: flex;
+        align-items: flex-start;
+      }
+
+      #song-list {
+        color: #fff;
+        text-align: left;
+        margin-right: 40px;
+        padding-top: 140px; /* Adjusted padding for better spacing */
+      }
+
+
+      #music-player {
+        background-color: #1a1a1a;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        color: #fff;
+        text-align: center;
+        margin: 20px;
+        margin-left: 380px;
+      }
+
+      h1 {
+        color: cyan;
+      }
+
+      audio {
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      button {
+        background-color: #0074cc;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        margin: 5px;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      button:hover {
+        background-color: #005bb5;
+      }
+
+      canvas {
+        display: block;
+        margin: 20px auto;
+        border-radius: 5px;
+        border: 2px solid #fff;
+      }
+
+      #cd-icon {
+        width: 100px;
+        height: 100px;
+        margin-top: 20px;
+        animation: rotateCD 2s linear infinite;
+        animation-play-state: paused;
+      }
+
+      #music-player.playing #cd-icon {
+        animation-play-state: running;
+      }
+
+      @keyframes rotateCD {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      #song-name {
+        color: lightgoldenrodyellow;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="music-container">
+      <div id="song-list">
+        <h1>
+          Song List:
+          <ul>
+          <li onclick="playTrack(0)">Lutt Putt Gaya</li>
+          <li onclick="playTrack(1)">Hua Main</li>
+          <li onclick="playTrack(2)">PBM</li>
+          </ul>
+        </h1>
+      </div>
+    <div id="music-player">
+      <h1>Arpan Music Player</h1>
+      <div id="song-name">Now Playing: Lutt Putt Gaya</div>
+      <audio id="myAudio" controls>
+        <source src="Lutt Putt Gaya.mp3" type="audio/mp3" />
+        <source src="Hua Main.mp3" type="audio/mp3" />
+        <source src="PBM.mp3" type="audio/mp3" />
+        Your browser does not support the audio tag.
+      </audio>
+      <br />
+      <button onclick="playPause()">Play/Pause</button>
+      <button onclick="playPrevious()">Previous</button>
+      <button onclick="playNext()">Next</button>
+      <br />
+      <canvas id="visualizer" width="400" height="50"></canvas>
+      <img id="cd-icon" src="cd3.png" alt="CD Icon" />
+    </div>
+
+    <script>
+      var audio = document.getElementById("myAudio");
+      var canvas = document.getElementById("visualizer");
+      var ctx = canvas.getContext("2d");
+      var currentTrack = 0;
+      var tracks = ["Lutt Putt Gaya.mp3", "Hua Main.mp3", "PBM.mp3"];
+      var songName = document.getElementById("song-name");
+      var musicPlayer = document.getElementById("music-player");
+
+      function playPause() {
+        if (audio.paused) {
+          audio.play();
+          musicPlayer.classList.add("playing");
+        } else {
+          audio.pause();
+          musicPlayer.classList.remove("playing");
+        }
+      }
+
+      function playNext() {
+        currentTrack = (currentTrack + 1) % tracks.length;
+        audio.src = tracks[currentTrack];
+        audio.play();
+        updateSongInfo();
+      }
+
+      function playPrevious() {
+        currentTrack = (currentTrack - 1 + tracks.length) % tracks.length;
+        audio.src = tracks[currentTrack];
+        audio.play();
+        updateSongInfo();
+      }
+
+      function visualize() {
+        var audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        var analyser = audioContext.createAnalyser();
+        var source = audioContext.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        analyser.fftSize = 32;
+        var bufferLength = analyser.frequencyBinCount;
+        var dataArray = new Uint8Array(bufferLength);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        function draw() {
+          analyser.getByteFrequencyData(dataArray);
+
+          var barWidth = (canvas.width / bufferLength) * 2.5;
+          var barHeight;
+          var x = 0;
+
+          for (var i = 0; i < bufferLength; i++) {
+            barHeight = dataArray[i] / 2;
+
+            ctx.fillStyle =
+              "rgb(" + (barHeight + 100) + "," + (barHeight + 100) + ",255)";
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+            x += barWidth + 1;
+          }
+
+          requestAnimationFrame(draw);
+        }
+
+        draw();
+      }
+
+      function playTrack(index) {
+        currentTrack = index;
+        audio.src = tracks[currentTrack];
+        audio.play();
+        updateSongInfo();
+      }
+
+      document.getElementById("song-list").addEventListener("click", function (event) {
+    var clickedIndex = Array.from(event.currentTarget.querySelectorAll("li")).indexOf(event.target);
+    if (clickedIndex !== -1) {
+      playTrack(clickedIndex);
+    }
+  });
+  
+  function updateSongInfo() {
+    songName.textContent = "Now Playing: " + tracks[currentTrack];
+  }
+
+  audio.addEventListener("play", function () {
+    visualize();
+    musicPlayer.classList.add("playing");
+  });
+
+  audio.addEventListener("pause", function () {
+    musicPlayer.classList.remove("playing");
+  });
+
+  audio.addEventListener("ended", function () {
+    musicPlayer.classList.remove("playing");
+  });
+
+  updateSongInfo();
+    </script>
+  </body>
+</html>
